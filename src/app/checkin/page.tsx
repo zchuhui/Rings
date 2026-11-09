@@ -80,7 +80,7 @@ export default function CheckinPage() {
   };
 
   return (
-    <div className="narrow">
+    <div className="narrow focus-panel">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <p className="kicker">晚间回顾 · 30 秒</p>

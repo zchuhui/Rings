@@ -2,8 +2,18 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { LogoMark } from '@/components/Logo';
-import { LoopDiagram, ZoneDiagram } from '@/components/TheoryDiagrams';
+import {
+  CompoundArt,
+  EnergyArt,
+  EnvironmentArt,
+  GrowthArt,
+  IntroArt,
+  LayersArt,
+  LoopArt,
+  MindArt,
+  ZoneArt,
+} from '@/components/Illustrations';
+import { Ring } from '@/components/Ring';
 import { postJSON } from '@/lib/api';
 import { CRISIS_REPLY, hasCrisisSignal } from '@/lib/coach';
 import { todayStr } from '@/lib/dates';
@@ -32,7 +42,7 @@ const LAST = 7;
 
 /**
  * 第一次进来：先讲清楚成长是怎么发生的，再定主题。
- * 每讲一条原理，问一个关于你自己的问题，并马上用你的话回应你。
+ * 每讲一条原理配一张图，问一个关于你自己的问题，并马上用你的话回应你；图也会跟着你的回答变化。
  */
 export default function WelcomePage() {
   const state = useAppState();
@@ -81,9 +91,10 @@ export default function WelcomePage() {
 
   const ratings = o.ratings ?? {};
   const crisis = hasCrisisSignal(o.struggle);
+  const today = todayStr();
 
   return (
-    <div className="narrow welcome">
+    <div className="welcome">
       {step > 0 && (
         <div className="steps" aria-label={`第 ${step} 页，共 ${LAST} 页`}>
           {Array.from({ length: LAST }, (_, i) => (
@@ -93,23 +104,21 @@ export default function WelcomePage() {
       )}
 
       {step === 0 && (
-        <>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <LogoMark size={56} />
-            <h1 className="serif" style={{ fontSize: 30, lineHeight: 1.4 }}>
+        <Stage art={<IntroArt />}>
+          <div className="lesson-head">
+            <p className="kicker">年轮 · 开始之前</p>
+            <h1 className="lesson-title">
               在开始之前，
               <br />
               我想先认识你。
             </h1>
-            <p style={{ color: 'var(--ink-2)', lineHeight: 1.8 }}>
+            <p className="lesson-body">
               这里不会一上来就让你填目标。接下来几页，会用 3 分钟讲清楚成长到底是怎么发生的。每一页，我会问你一个关于你自己的小问题。
             </p>
-            <p className="muted" style={{ fontSize: 14 }}>
-              你说的每一句话，我都会记着。它们会在之后的 90 天里，一次次回到你面前。
-            </p>
+            <p className="muted">你说的每一句话，我都会记着。它们会在之后的 90 天里，一次次回到你面前。</p>
           </div>
           <button type="button" className="btn block" onClick={next}>开始</button>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 20, fontSize: 13 }}>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 20, flexWrap: 'wrap' }}>
             <button type="button" className="linkbtn quiet" onClick={skip}>我已经了解，直接开始</button>
             <button
               type="button"
@@ -123,11 +132,11 @@ export default function WelcomePage() {
               先看看练了 20 天的样子
             </button>
           </div>
-        </>
+        </Stage>
       )}
 
       {step === 1 && (
-        <Lesson id="growth" n={1}>
+        <Lesson id="growth" n={1} art={<GrowthArt struggle={o.struggle} />}>
           <div className="field">
             <label htmlFor="struggle" className="label">最近有哪件事，让你觉得有点搞不定？</label>
             <textarea
@@ -159,14 +168,17 @@ export default function WelcomePage() {
       )}
 
       {step === 2 && (
-        <Lesson id="growth" n={2} titleOverride="应对能力有三层：认知、能力、心性。" hideBody>
-          <p style={{ color: 'var(--ink-2)', lineHeight: 1.8, fontSize: 15 }}>
-            认知高而能力弱，会眼高手低；能力强而心性弱，一遇挫折就崩。凭感觉给自己现在的三层打个分，没有对错。
-          </p>
+        <Lesson
+          id="growth"
+          n={2}
+          art={<LayersArt ratings={ratings} />}
+          title="应对能力有三层：认知、能力、心性。"
+          body="认知高而能力弱，会眼高手低；能力强而心性弱，一遇挫折就崩。很多人卡住，是因为只在其中一层用力。凭感觉给自己现在的三层打个分，没有对错。"
+        >
           {LAYERS.map((l) => (
             <fieldset key={l.key} className="field" style={{ border: 0, padding: 0, margin: 0 }}>
               <legend className="label" style={{ marginBottom: 8 }}>
-                <b style={{ color: 'var(--ink)' }}>{l.name}</b> · {l.hint}
+                <b>{l.name}</b> <span className="muted">· {l.hint}</span>
               </legend>
               <div className="choices">
                 {[1, 2, 3, 4, 5].map((n) => (
@@ -189,33 +201,43 @@ export default function WelcomePage() {
       )}
 
       {step === 3 && (
-        <Lesson id="loop" n={3} figure={<LoopDiagram />}>
-          <Choices
-            question="以前想改变的时候，你最常卡在哪一步？"
-            options={STUCK}
-            value={o.stuck}
-            onChange={(stuck) => set({ stuck })}
-          />
+        <Lesson id="loop" n={3} art={<LoopArt stuck={o.stuck} />}>
+          <Choices question="以前想改变的时候，你最常卡在哪一步？" options={STUCK} value={o.stuck} onChange={(stuck) => set({ stuck })} />
           {o.stuck && <Echo>{echoStuck(o.stuck)}</Echo>}
           <Nav onBack={back} onNext={next} disabled={!o.stuck} />
         </Lesson>
       )}
 
       {step === 4 && (
-        <Lesson id="zone" n={4} figure={<ZoneDiagram />} extra={principle('system')}>
-          <Choices
-            question="过去立下的目标，你通常能坚持多久？"
-            options={PERSISTENCE}
-            value={o.persistence}
-            onChange={(persistence) => set({ persistence })}
-          />
+        <Lesson
+          id="zone"
+          n={4}
+          extra="system"
+          art={
+            <>
+              <ZoneArt persistence={o.persistence} />
+              <CompoundArt />
+            </>
+          }
+        >
+          <Choices question="过去立下的目标，你通常能坚持多久？" options={PERSISTENCE} value={o.persistence} onChange={(persistence) => set({ persistence })} />
           {o.persistence && <Echo>{echoPersistence(o.persistence)}</Echo>}
           <Nav onBack={back} onNext={next} disabled={!o.persistence} />
         </Lesson>
       )}
 
       {step === 5 && (
-        <Lesson id="energy" n={5} extra={principle('environment')}>
+        <Lesson
+          id="energy"
+          n={5}
+          extra="environment"
+          art={
+            <>
+              <EnergyArt energy={o.energy} />
+              <EnvironmentArt />
+            </>
+          }
+        >
           <fieldset className="field" style={{ border: 0, padding: 0, margin: 0 }}>
             <legend className="label" style={{ marginBottom: 8 }}>最近一周，你的状态怎么样？睡眠、情绪、专注放在一起感受一下。</legend>
             <div className="energy-pick" role="group">
@@ -236,7 +258,7 @@ export default function WelcomePage() {
       )}
 
       {step === 6 && (
-        <Lesson id="mind" n={6}>
+        <Lesson id="mind" n={6} art={<MindArt selfTalk={o.selfTalk} />}>
           <Choices
             question="一件事没做到的时候，你心里通常会对自己说什么？"
             options={SELF_TALK}
@@ -250,10 +272,22 @@ export default function WelcomePage() {
       )}
 
       {step === LAST && (
-        <>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <Stage
+          art={
+            <figure className="ill">
+              <div style={{ maxWidth: 340, width: '100%', margin: '0 auto' }}>
+                <Ring entries={[]} startDate={today} today={today}>
+                  <p className="ring-count" style={{ fontSize: 34 }}>第 1 天</p>
+                  <p className="ring-sub">你的年轮从这里开始</p>
+                </Ring>
+              </div>
+              <figcaption>最里圈那一道闪烁的虚线，就是今天。</figcaption>
+            </figure>
+          }
+        >
+          <div className="lesson-head">
             <p className="kicker">我听到的你</p>
-            <h1 className="serif" style={{ fontSize: 28, lineHeight: 1.4 }}>这是你刚才告诉我的。</h1>
+            <h1 className="lesson-title">这是你刚才告诉我的。</h1>
           </div>
           <div className="list">
             {originLines(o).map((l) => (
@@ -290,8 +324,18 @@ export default function WelcomePage() {
               从这里出发
             </button>
           </div>
-        </>
+        </Stage>
       )}
+    </div>
+  );
+}
+
+/** 一页：PC 上左图右文，手机上图在上 */
+function Stage({ art, children }: { art: ReactNode; children: ReactNode }) {
+  return (
+    <div className="lesson">
+      <div className="lesson-art">{art}</div>
+      <div className="lesson-main">{children}</div>
     </div>
   );
 }
@@ -299,38 +343,41 @@ export default function WelcomePage() {
 function Lesson({
   id,
   n,
-  figure,
+  art,
   extra,
-  titleOverride,
-  hideBody,
+  title,
+  body,
   children,
 }: {
   id: PrincipleId;
   n: number;
-  figure?: ReactNode;
-  extra?: ReturnType<typeof principle>;
-  titleOverride?: string;
-  hideBody?: boolean;
+  art: ReactNode;
+  extra?: PrincipleId;
+  title?: string;
+  body?: string;
   children: ReactNode;
 }) {
   const p = principle(id);
+  const x = extra ? principle(extra) : null;
   return (
-    <>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <p className="kicker">成长的底层逻辑 · {n} / 6 · {p.name}{extra ? ` · ${extra.name}` : ''}</p>
-        <h1 className="serif" style={{ fontSize: 26, lineHeight: 1.45 }}>{titleOverride ?? p.core}</h1>
-        {figure}
-        {!hideBody && <p style={{ color: 'var(--ink-2)', lineHeight: 1.8, fontSize: 15 }}>{p.body}</p>}
-        {extra && (
-          <p style={{ color: 'var(--ink-2)', lineHeight: 1.8, fontSize: 15 }}>
-            <b>{extra.core}</b>
-            {extra.body}
+    <Stage art={art}>
+      <div className="lesson-head">
+        <p className="kicker">
+          成长的底层逻辑 · {n} / 6 · {p.name}
+          {x ? ` · ${x.name}` : ''}
+        </p>
+        <h1 className="lesson-title">{title ?? p.core}</h1>
+        <p className="lesson-body">{body ?? p.body}</p>
+        {x && (
+          <p className="lesson-body">
+            <b>{x.core}</b>
+            {x.body}
           </p>
         )}
       </div>
       <hr className="divider" />
       {children}
-    </>
+    </Stage>
   );
 }
 

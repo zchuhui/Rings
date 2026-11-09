@@ -29,47 +29,49 @@ export default function WeeklyPage() {
   const right = week.filter((e) => e.feel === 'right').length;
 
   return (
-    <div className="narrow">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+    <div className="page">
+      <div className="page-head">
         <p className="kicker">最近 7 天</p>
-        <h1 className="serif" style={{ fontSize: 28 }}>这一周，长了 {grown} 道纹。</h1>
+        <h1 className="page-title">这一周，长了 {grown} 道纹。</h1>
         <p className="muted" style={{ fontSize: 14 }}>其中 {right} 天难度刚好，正待在学习区。</p>
       </div>
 
-      <div className="list">
-        {week.length === 0 && <div className="muted">这周还没有记录。</div>}
-        {week.map((e) => (
-          <div key={e.date} style={{ alignItems: 'flex-start', padding: '12px 0' }}>
-            <span style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-              <i
-                aria-hidden="true"
-                style={{
-                  marginTop: 7,
-                  width: 10,
-                  height: 10,
-                  borderRadius: 5,
-                  flex: '0 0 10px',
-                  background: e.outcome === 'skipped' ? '#B5AD9C' : ENERGY_COLORS[e.energy ?? 3],
-                }}
-              />
-              <span>
-                <span style={{ display: 'block' }}>{e.note || <span className="muted">（没有写记录）</span>}</span>
-                {e.echo && (
-                  <span style={{ display: 'block', fontSize: 13, color: 'var(--forest)', margin: '2px 0' }}>↳ {e.echo}</span>
-                )}
-                <span className="muted" style={{ fontSize: 12 }}>
-                  L{e.level} · {OUTCOME_WORDS[e.outcome]}
-                  {e.feel ? ` · ${FEEL_WORDS[e.feel]}` : ''}
-                  {e.reason ? ` · ${REASON_WORDS[e.reason]}` : ''}
+      <div className="split wide-right">
+        <div className="list sticky">
+          {week.length === 0 && <div className="muted">这周还没有记录。</div>}
+          {week.map((e) => (
+            <div key={e.date} style={{ alignItems: 'flex-start', padding: '12px 0' }}>
+              <span style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                <i
+                  aria-hidden="true"
+                  style={{
+                    marginTop: 7,
+                    width: 10,
+                    height: 10,
+                    borderRadius: 5,
+                    flex: '0 0 10px',
+                    background: e.outcome === 'skipped' ? '#B5AD9C' : ENERGY_COLORS[e.energy ?? 3],
+                  }}
+                />
+                <span>
+                  <span style={{ display: 'block' }}>{e.note || <span className="muted">（没有写记录）</span>}</span>
+                  {e.echo && (
+                    <span style={{ display: 'block', fontSize: 13, color: 'var(--forest)', margin: '2px 0' }}>↳ {e.echo}</span>
+                  )}
+                  <span className="muted" style={{ fontSize: 12 }}>
+                    L{e.level} · {OUTCOME_WORDS[e.outcome]}
+                    {e.feel ? ` · ${FEEL_WORDS[e.feel]}` : ''}
+                    {e.reason ? ` · ${REASON_WORDS[e.reason]}` : ''}
+                  </span>
                 </span>
               </span>
-            </span>
-            <span className="muted" style={{ fontSize: 12, whiteSpace: 'nowrap' }}>{shortLabel(e.date)}</span>
-          </div>
-        ))}
-      </div>
+              <span className="muted" style={{ fontSize: 12, whiteSpace: 'nowrap' }}>{shortLabel(e.date)}</span>
+            </div>
+          ))}
+        </div>
 
-      <CoachReview week={week} today={today} />
+        <CoachReview week={week} today={today} />
+      </div>
     </div>
   );
 }

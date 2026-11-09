@@ -32,15 +32,15 @@ export default function CardsPage() {
   };
 
   return (
-    <div className="narrow">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+    <div className="page">
+      <div className="page-head">
         <p className="kicker">认知卡片 · {cards.length} 张</p>
-        <h1 className="serif" style={{ fontSize: 28 }}>你自己说过的真话。</h1>
+        <h1 className="page-title">你自己说过的真话。</h1>
         <p className="muted" style={{ fontSize: 14 }}>每周复盘后，教练会帮你把一句认知收成一张卡片。下次复盘时，它会帮你发现跨周的规律。</p>
       </div>
 
       {cards.length === 0 && (
-        <div className="note">
+        <div className="note" style={{ maxWidth: 520 }}>
           <p>还没有卡片。</p>
           <Link href="/weekly" className="muted" style={{ fontSize: 14 }}>去做本周复盘 →</Link>
         </div>
@@ -49,6 +49,7 @@ export default function CardsPage() {
       {themes.map((theme) => (
         <section key={theme} className="field" style={{ gap: 12 }}>
           {themes.length > 1 && <p className="kicker rule">{theme}</p>}
+          <div className="card-grid">
           {cards
             .filter((c) => c.theme === theme)
             .map((c) => (
@@ -92,6 +93,7 @@ export default function CardsPage() {
                 )}
               </article>
             ))}
+          </div>
         </section>
       ))}
     </div>
