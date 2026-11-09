@@ -42,6 +42,20 @@ export default function OnboardingPage() {
   const [aiMsg, setAiMsg] = useState('');
   const [crisis, setCrisis] = useState(false);
 
+  // 第一次进来，先看成长理论
+  useEffect(() => {
+    if (state && !state.plan && !state.origin) router.replace('/welcome');
+  }, [state, router]);
+
+  // 带上起步时说过的那句困扰，直接用它来收敛主题
+  const struggle = state?.origin?.struggle ?? '';
+  useEffect(() => {
+    if (struggle && !state?.plan) {
+      setDescription(struggle);
+      setAiOpen(true);
+    }
+  }, [struggle]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // 修改主题时带出现有内容
   useEffect(() => {
     if (state?.plan) {
@@ -50,7 +64,7 @@ export default function OnboardingPage() {
     }
   }, [state?.plan?.startDate]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (!state) return null;
+  if (!state || (!state.plan && !state.origin)) return null;
 
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => setD((x) => ({ ...x, [k]: v }));
   const setLevel = (i: number, v: string) =>
@@ -146,19 +160,26 @@ export default function OnboardingPage() {
       {step === 0 && (
         <>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {!editing && <LogoMark size={56} />}
+            {!editing && !struggle && <LogoMark size={56} />}
             <p className="kicker">第 1 步 · 定方向</p>
+            {!editing && struggle && (
+              <p className="serif" style={{ fontWeight: 500, fontSize: 16, lineHeight: 1.7, color: 'var(--ink-2)' }}>
+                你说：「{struggle}」
+              </p>
+            )}
             <h1 className="serif" style={{ fontSize: 28, lineHeight: 1.35 }}>
               接下来 90 天，<br />只练一件事。
             </h1>
             <p className="muted" style={{ fontSize: 14 }}>
-              选一个看得见、做得到的行为。“提升沟通能力”太大，“在会议上说出自己的观点”刚好。
+              {struggle && !editing
+                ? '把它收敛成一个看得见、做得到的行为。这是学习区原理：太大的目标会把你推进恐慌区。'
+                : '选一个看得见、做得到的行为。“提升沟通能力”太大，“在会议上说出自己的观点”刚好。'}
             </p>
           </div>
           <div className="note">
             {aiOpen ? (
               <>
-                <label htmlFor="desc" className="kicker">说说最近最想突破、或者最困扰你的事</label>
+                <label htmlFor="desc" className="kicker">{struggle ? '你说的那件事，可以再补充几句' : '说说最近最想突破、或者最困扰你的事'}</label>
                 <textarea
                   id="desc"
                   className="textarea"
@@ -168,7 +189,7 @@ export default function OnboardingPage() {
                   placeholder="比如：开会时总是不敢说话，明明有想法，散会后又后悔"
                 />
                 <button type="button" className="btn block" style={{ minHeight: 46, marginTop: 6 }} disabled={busy !== null || description.trim().length < 4} onClick={askDraft}>
-                  {busy === 'draft' ? '正在收敛成一件事…' : 'AI 帮我收敛成一件事'}
+                  {busy === 'draft' ? '正在收敛成一件事…' : d.theme ? 'AI 重新收敛一次' : 'AI 帮我收敛成一件事'}
                 </button>
               </>
             ) : (

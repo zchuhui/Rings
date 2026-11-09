@@ -41,7 +41,7 @@ export function CoachReview({ week, today }: { week: Entry[]; today: string }) {
   const context = () => {
     const s = getState();
     const cards = [...s.cards].sort((a, b) => Number(b.pinned) - Number(a.pinned));
-    return { plan: s.plan, week, cards };
+    return { plan: s.plan, week, cards, origin: s.origin };
   };
 
   const send = async (date: string, history: ChatMessage[]) => {

@@ -2,11 +2,13 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Ring } from '@/components/Ring';
+import { postJSON } from '@/lib/api';
 import { todayStr } from '@/lib/dates';
 import { countGrooves, type Adjustment } from '@/lib/engine';
-import { ADJ_KEY } from '@/lib/store';
+import { ADJ_KEY, getState, saveEcho } from '@/lib/store';
+import { principle, principleFor } from '@/lib/theory';
 import { useAppState } from '@/lib/useAppState';
 
 const COLOR_WORDS: Record<number, string> = {
@@ -21,6 +23,8 @@ export default function DonePage() {
   const state = useAppState();
   const router = useRouter();
   const [adj, setAdj] = useState<Adjustment | null>(null);
+  const [echoing, setEchoing] = useState(false);
+  const asked = useRef('');
 
   useEffect(() => {
     try {
@@ -35,10 +39,28 @@ export default function DonePage() {
     if (state && !state.plan) router.replace('/onboarding');
   }, [state, router]);
 
+  // 被看见：教练读完今天这一句，回应一句。没配 AI 或断网时就不显示
+  const today = todayStr();
+  const entry = state?.entries.find((e) => e.date === today);
+  useEffect(() => {
+    if (!entry?.note || entry.echo || asked.current === entry.note) return;
+    asked.current = entry.note;
+    const s = getState();
+    setEchoing(true);
+    postJSON<{ text: string }>('/api/reflect', {
+      kind: 'entry',
+      theme: s.plan?.theme,
+      entry,
+      earlier: s.entries.filter((e) => e.date < entry.date && e.note),
+      struggle: s.origin?.struggle,
+    })
+      .then((r) => r.text && saveEcho(entry.date, r.text))
+      .catch(() => {})
+      .finally(() => setEchoing(false));
+  }, [entry?.note, entry?.echo]); // eslint-disable-line react-hooks/exhaustive-deps
+
   if (!state || !state.plan) return null;
 
-  const today = todayStr();
-  const entry = state.entries.find((e) => e.date === today);
   if (!entry) {
     return (
       <div className="narrow">
@@ -82,6 +104,14 @@ export default function DonePage() {
           <p className="kicker">系统调整</p>
           <p style={{ fontWeight: 600, fontSize: 17 }}>{adj.title}</p>
           {adj.body && <p className="muted" style={{ fontSize: 14 }}>{adj.body}</p>}
+          {(() => {
+            const p = principle(principleFor(adj.kind, skipped));
+            return (
+              <Link href={`/theory#${p.id}`} className="principle-tag" style={{ marginTop: 4 }}>
+                为什么：{p.name} · {p.core}
+              </Link>
+            );
+          })()}
         </div>
       )}
 
@@ -89,6 +119,12 @@ export default function DonePage() {
         <p className="serif" style={{ fontWeight: 500, fontSize: 16, lineHeight: 1.7, color: 'var(--ink-2)' }}>
           “{entry.note}”
         </p>
+      )}
+      {(entry.echo || echoing) && (
+        <div className="echo" aria-live="polite">
+          <p className="kicker">教练读到了</p>
+          <p>{entry.echo ?? <span className="pending">正在读你写的这一句…</span>}</p>
+        </div>
       )}
 
       <Link href="/" className="btn block">

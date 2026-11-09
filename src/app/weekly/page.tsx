@@ -54,6 +54,9 @@ export default function WeeklyPage() {
               />
               <span>
                 <span style={{ display: 'block' }}>{e.note || <span className="muted">（没有写记录）</span>}</span>
+                {e.echo && (
+                  <span style={{ display: 'block', fontSize: 13, color: 'var(--forest)', margin: '2px 0' }}>↳ {e.echo}</span>
+                )}
                 <span className="muted" style={{ fontSize: 12 }}>
                   L{e.level} · {OUTCOME_WORDS[e.outcome]}
                   {e.feel ? ` · ${FEEL_WORDS[e.feel]}` : ''}

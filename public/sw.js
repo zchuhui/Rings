@@ -1,6 +1,6 @@
 /* 年轮离线缓存：页面走网络优先、断网时用缓存；静态资源缓存优先；API 不缓存 */
-const CACHE = 'rings-v1';
-const SHELL = ['/', '/checkin', '/weekly', '/rings', '/plan', '/cards', '/manifest.webmanifest', '/icon.svg'];
+const CACHE = 'rings-v2';
+const SHELL = ['/', '/welcome', '/theory', '/checkin', '/weekly', '/rings', '/plan', '/cards', '/manifest.webmanifest', '/icon.svg'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));

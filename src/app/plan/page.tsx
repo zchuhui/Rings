@@ -88,6 +88,12 @@ export default function PlanPage() {
       </div>
 
       <div className="list">
+        <Link href="/theory" style={{ display: 'flex', justifyContent: 'space-between', width: '100%', minHeight: 50, alignItems: 'center', textDecoration: 'none' }}>
+          <span>成长的底层逻辑</span>
+          <span className="muted">回看七条原理 →</span>
+        </Link>
+      </div>
+      <div className="list" style={{ marginTop: -22 }}>
         <Link href="/cards" style={{ display: 'flex', justifyContent: 'space-between', width: '100%', minHeight: 50, alignItems: 'center', textDecoration: 'none' }}>
           <span>认知卡片</span>
           <span className="muted">{state.cards.length} 张 →</span>

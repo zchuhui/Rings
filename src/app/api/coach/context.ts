@@ -1,6 +1,6 @@
 import type { CoachContext } from '@/lib/coach';
 import { AIError } from '@/lib/server/deepseek';
-import type { Card, ChatMessage, Entry, Plan } from '@/lib/types';
+import type { Card, ChatMessage, Entry, Origin, Plan } from '@/lib/types';
 
 /** 校验页面传来的复盘上下文，并限制大小 */
 export function readContext(body: Record<string, unknown>): { ctx: CoachContext; messages: ChatMessage[] } {
@@ -12,5 +12,7 @@ export function readContext(body: Record<string, unknown>): { ctx: CoachContext;
     .filter((m: ChatMessage) => (m?.role === 'user' || m?.role === 'assistant') && typeof m.content === 'string')
     .slice(-30)
     .map((m: ChatMessage) => ({ role: m.role, content: m.content.slice(0, 1000) }));
-  return { ctx: { plan, week, cards }, messages };
+  const o = body.origin as Origin | null | undefined;
+  const origin = o && typeof o.struggle === 'string' ? { ...o, struggle: o.struggle.slice(0, 300) } : null;
+  return { ctx: { plan, week, cards, origin }, messages };
 }

@@ -1,7 +1,7 @@
 import { applyPlanChange, type PlanChange } from './coach';
 import { addDays, todayStr } from './dates';
 import { adjust, type Adjustment } from './engine';
-import type { AppState, Card, ChatMessage, Entry, Level, Plan, Review } from './types';
+import type { AppState, Card, ChatMessage, Entry, Level, Origin, Plan, Review } from './types';
 
 /**
  * 第一版数据只存在浏览器 localStorage 里。
@@ -11,7 +11,7 @@ import type { AppState, Card, ChatMessage, Entry, Level, Plan, Review } from './
 const KEY = 'rings:v1';
 /** 回顾提交后，把系统调整暂存给结果页 */
 export const ADJ_KEY = 'rings:last-adjustment';
-const EMPTY: AppState = { version: 1, plan: null, entries: [], cards: [], reviews: [] };
+const EMPTY: AppState = { version: 1, plan: null, origin: null, entries: [], cards: [], reviews: [] };
 
 let cache: AppState | undefined;
 const listeners = new Set<() => void>();
@@ -24,6 +24,7 @@ export function normalize(x: unknown): AppState | null {
   return {
     version: 1,
     plan: s.plan ?? null,
+    origin: s.origin ?? null,
     entries: s.entries,
     cards: Array.isArray(s.cards) ? s.cards : [],
     reviews: Array.isArray(s.reviews) ? s.reviews : [],
@@ -77,6 +78,16 @@ export function savePlan(plan: Plan) {
   write({ ...getState(), plan });
 }
 
+export function saveOrigin(origin: Origin) {
+  write({ ...getState(), origin });
+}
+
+/** 记下教练对某一天记录的回应 */
+export function saveEcho(date: string, echo: string) {
+  const s = getState();
+  write({ ...s, entries: s.entries.map((e) => (e.date === date ? { ...e, echo } : e)) });
+}
+
 /**
  * 写入一次回顾，返回系统给出的调整。
  * 修改同一天的回顾时，先回到第一次提交前的等级再重新计算，调整不会叠加。
@@ -87,7 +98,8 @@ export function saveEntry(entry: Entry): Adjustment {
   const prev = s.entries.find((e) => e.date === entry.date);
   const base = prev?.planLevel ?? s.plan.level;
   const plan = { ...s.plan, level: base };
-  const saved: Entry = { ...entry, planLevel: base };
+  // 记录改了，之前的回应就不再对得上
+  const saved: Entry = { ...entry, planLevel: base, echo: prev && prev.note === entry.note ? prev.echo : undefined };
   const entries = [...s.entries.filter((e) => e.date !== entry.date), saved].sort((a, b) =>
     a.date.localeCompare(b.date),
   );
@@ -212,5 +224,14 @@ export function seedDemo() {
     note: notes[i],
     ...(outcome === 'skipped' ? { reason: x as Entry['reason'] } : { feel: x as Entry['feel'] }),
   }));
-  write({ version: 1, plan, entries, cards: [], reviews: [] });
+  const origin: Origin = {
+    date: startDate,
+    struggle: '开会时总是不敢说话，明明有想法，散会后又后悔',
+    ratings: { cognition: 3, ability: 3, mind: 2 },
+    stuck: 'restart',
+    persistence: 'weeks',
+    energy: 3,
+    selfTalk: 'again',
+  };
+  write({ version: 1, plan, origin, entries, cards: [], reviews: [] });
 }

@@ -1,4 +1,5 @@
-import type { Card, ChatMessage, Entry, Level, Plan } from './types';
+import { describeOrigin } from './theory';
+import type { Card, ChatMessage, Entry, Level, Origin, Plan } from './types';
 
 /**
  * AI 教练的提示词和结果校验（PRD F1、F2、F6、F9.2）。
@@ -105,9 +106,11 @@ export interface CoachContext {
   week: Entry[];
   /** 历史认知卡片，用来发现跨周的规律 */
   cards: Card[];
+  /** 第一天的回答，让教练能把现在和起点连起来 */
+  origin?: Origin | null;
 }
 
-export function coachSystem({ plan, week, cards }: CoachContext): string {
+export function coachSystem({ plan, week, cards, origin }: CoachContext): string {
   const records = week.length ? [...week].sort((a, b) => a.date.localeCompare(b.date)).map(describeEntry).join('\n') : '（本周没有记录）';
   const history = cards.length ? cards.slice(0, 10).map((c) => `- ${c.date}：${c.text}`).join('\n') : '（还没有）';
   return `你是「年轮」的成长教练，正在带用户做每周复盘，大约 15 分钟。你的角色是提问者，不是说教者：帮用户看清自己的记录，而不是替用户下结论。
@@ -125,6 +128,9 @@ ${records}
 以前的认知卡片：
 ${history}
 
+用户第一天（${origin?.date ?? '未知'}）留下的回答：
+${origin ? describeOrigin(origin) : '（没有）'}
+
 复盘围绕四个问题，一次只问一个，按顺序推进，但要跟着用户的回答走：
 1. 这周哪里走出了舒适区？
 2. 得到了什么反馈？
@@ -135,7 +141,7 @@ ${history}
 - 每轮回复不超过 120 字，以一个提问结尾。建议最多一条。
 - 引用用户的原始记录，用引号标出原话，不说空泛的鸡汤。
 - 区分事实和解释。用户说“同事觉得我的意见很蠢”时，追问“他实际说了什么”。
-- 发现和以前卡片相似的规律时，可以点出来。
+- 发现和以前卡片相似的规律时，可以点出来。用户这周的变化如果能和第一天说过的话对上，也点出来，让用户看见自己走了多远。
 - 语气温和而直接，不羞辱，不制造内疚，也不空洞夸奖。没做的天数是数据，不是失败。
 - 不做心理诊断，不给医疗、法律或投资建议。
 - 如果用户流露出自伤、轻生或严重抑郁的信号，停止复盘，温和回应，建议拨打全国心理援助热线 12356，紧急情况拨打 110 或 120。
@@ -236,4 +242,62 @@ export function extractJSON(text: string): unknown {
       return null;
     }
   }
+}
+
+/* ---------- 被看见：教练读完之后的回应 ---------- */
+
+const ECHO_RULES = `规则：
+- 像一个认真读过的人在回应，而不是在点评。具体到用户写下的某个词或细节，用「」引用原话。
+- 不说“加油”“你真棒”“太厉害了”这类空洞夸奖，不说教，不给建议，不提问。
+- 没做到的时候，不安慰过度，也不制造内疚，只是如实看见。
+- 用简体中文，不用感叹号，不用 Markdown。`;
+
+/** 看完成长理论后，读完全部回答写的一段话 */
+export function originEchoPrompt(o: Origin): ChatMessage[] {
+  return [
+    {
+      role: 'user',
+      content: `一位用户刚看完「年轮」的成长理论（成长是应对的世界变大；反馈循环；学习区；复利与系统；能量底座；环境设计；失败是数据），并回答了几个问题：
+
+${describeOrigin(o)}
+
+请写一段 2 到 3 句、不超过 110 字的话，让用户感到被认真读过。把用户的回答连起来看，指出一个用户自己可能没注意到的联系，并用一条成长原理解释它。第二人称“你”。
+
+${ECHO_RULES}`,
+    },
+  ];
+}
+
+export interface EntryEchoInput {
+  theme: string;
+  entry: Entry;
+  /** 之前几天的记录原话，用来发现前后的联系 */
+  earlier: Array<Pick<Entry, 'date' | 'note'>>;
+  struggle?: string;
+}
+
+/** 晚间回顾后，对今天那句记录的一句回应 */
+export function entryEchoPrompt({ theme, entry, earlier, struggle }: EntryEchoInput): ChatMessage[] {
+  const past = earlier.filter((e) => e.note).slice(-6).map((e) => `- ${e.date}：「${e.note}」`).join('\n');
+  return [
+    {
+      role: 'user',
+      content: `用户在练「${theme}」，刚写完今天的晚间回顾：
+${describeEntry(entry)}
+${struggle ? `\n用户第一天说最困扰的是：「${struggle}」` : ''}
+${past ? `\n之前几天的记录：\n${past}` : ''}
+
+请用一句话回应今天的记录，不超过 50 字。如果今天和之前的记录、或和第一天的困扰能对上（比如同一种场景又出现了，或者以前做不到的现在做到了），点出这个联系；否则只回应今天的细节。
+
+${ECHO_RULES}`,
+    },
+  ];
+}
+
+/** 去掉模型偶尔包在整段外面的引号和多余空白，句中引用原话的引号保留 */
+export function cleanEcho(text: string, max = 160): string {
+  let t = text.trim().replace(/\s*\n+\s*/g, '');
+  const m = t.match(/^(["“])([^"“”]*)(["”])$/);
+  if (m) t = m[2];
+  return t.slice(0, max);
 }

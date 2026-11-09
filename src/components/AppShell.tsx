@@ -13,8 +13,8 @@ const TABS = [
   { href: '/plan', label: '我的' },
 ];
 
-/** 起步设置和晚间回顾是专注流程，不显示导航 */
-const FOCUS_ROUTES = ['/onboarding', '/checkin'];
+/** 起步介绍、起步设置和晚间回顾是专注流程，不显示导航 */
+const FOCUS_ROUTES = ['/welcome', '/onboarding', '/checkin'];
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname() ?? '/';

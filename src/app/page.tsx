@@ -7,6 +7,7 @@ import { Ring, RingLegend } from '@/components/Ring';
 import { daysBetween, todayStr } from '@/lib/dates';
 import { countGrooves, todayChallenge } from '@/lib/engine';
 import { useAppState } from '@/lib/useAppState';
+import { pickRecall } from '@/lib/theory';
 import { STAGES, THEME_DAYS } from '@/lib/types';
 
 export default function HomePage() {
@@ -14,7 +15,7 @@ export default function HomePage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (state && !state.plan) router.replace('/onboarding');
+    if (state && !state.plan) router.replace(state.origin ? '/onboarding' : '/welcome');
   }, [state, router]);
 
   if (!state || !state.plan) return null;
@@ -25,12 +26,14 @@ export default function HomePage() {
   const done = entries.find((e) => e.date === today);
   const day = daysBetween(plan.startDate, today) + 1;
   const finished = day > THEME_DAYS;
+  const recall = pickRecall(state.origin, entries, plan.startDate, today);
+  const grooves = countGrooves(entries);
 
   return (
     <div className="home">
       <section className="home-ring" aria-label="我的年轮">
         <Ring entries={entries} startDate={plan.startDate} today={today}>
-          <p className="ring-count">{countGrooves(entries)}</p>
+          <p className="ring-count">{grooves}</p>
           <p className="ring-sub">道纹</p>
         </Ring>
         <div style={{ marginTop: 8 }}>
@@ -91,6 +94,17 @@ export default function HomePage() {
         <p className="serif" style={{ fontWeight: 500, fontSize: 17, marginTop: 6 }}>
           “{plan.identity.replace(/[。.]$/, '')}。”
         </p>
+        {recall && (
+          <div className="recall">
+            <p className="kicker">{recall.label}</p>
+            <p className="recall-text">「{recall.text}」</p>
+            {day > 1 && (
+              <p className="muted" style={{ fontSize: 13, fontFamily: 'var(--sans)' }}>
+                从那天起，你刻下了 {grooves} 道纹。
+              </p>
+            )}
+          </div>
+        )}
       </section>
     </div>
   );

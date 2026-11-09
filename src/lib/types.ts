@@ -33,6 +33,26 @@ export interface Entry {
   energy?: Energy;
   /** 写入这条回顾之前的等级。修改当天回顾时，从这里重新计算，避免调整叠加 */
   planLevel?: Level;
+  /** 教练读完这一句记录后的回应 */
+  echo?: string;
+}
+
+/**
+ * 起点：第一次进来时，看完成长理论留下的回答（PRD F1 自评）。
+ * 之后在首页、复盘和第 90 天报告里反复被提起，让用户一直被看见。
+ */
+export interface Origin {
+  date: string;
+  /** 最近让你搞不定的事，原话 */
+  struggle: string;
+  /** 认知、能力、心性三层自评，1–5 */
+  ratings?: { cognition?: number; ability?: number; mind?: number };
+  stuck?: 'action' | 'feedback' | 'reflect' | 'restart';
+  persistence?: 'days' | 'weeks' | 'month' | 'long';
+  energy?: Energy;
+  selfTalk?: 'again' | 'giveup' | 'later' | 'curious';
+  /** 教练读完全部回答后写的一段话 */
+  reflection?: string;
 }
 
 /** 认知卡片（PRD F7） */
@@ -65,6 +85,7 @@ export interface Review {
 export interface AppState {
   version: 1;
   plan: Plan | null;
+  origin: Origin | null;
   entries: Entry[];
   cards: Card[];
   reviews: Review[];

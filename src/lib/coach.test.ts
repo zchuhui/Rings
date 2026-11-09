@@ -55,3 +55,35 @@ test('危机信号识别', () => {
   assert.ok(hasCrisisSignal('最近真的不想活了'));
   assert.ok(!hasCrisisSignal('今天会议上说了一句话'));
 });
+
+import { echoRatings, pickRecall, principleFor } from './theory';
+
+test('三层自评的回应：点出最低和最高的一层', () => {
+  assert.match(echoRatings({ cognition: 3, ability: 4, mind: 2 }), /心性是你给分最低的（2 分），能力是你的底子（4 分）/);
+  assert.match(echoRatings({ cognition: 3, ability: 3, mind: 3 }), /三层你都打了 3 分/);
+  assert.equal(echoRatings({ cognition: 3 }), '');
+});
+
+test('首页回声：第一周是起点那句话，之后也会轮到以前的记录', () => {
+  const origin = { date: '2026-10-01', struggle: '开会不敢说话' };
+  const entries = [{ date: '2026-10-02', level: 1 as const, outcome: 'done' as const, note: '说了一句同意' }];
+  assert.equal(pickRecall(origin, entries, '2026-10-01', '2026-10-03')?.text, '开会不敢说话');
+  const texts = new Set(['2026-10-10', '2026-10-11'].map((d) => pickRecall(origin, entries, '2026-10-01', d)?.text));
+  assert.deepEqual([...texts].sort(), ['开会不敢说话', '说了一句同意'].sort());
+  assert.equal(pickRecall(null, [], '2026-10-01', '2026-10-03'), null);
+});
+
+test('系统调整对应到原理', () => {
+  assert.equal(principleFor('recharge', false), 'energy');
+  assert.equal(principleFor('trigger', true), 'environment');
+  assert.equal(principleFor('keep', true), 'mind');
+  assert.equal(principleFor('up', false), 'zone');
+});
+
+import { cleanEcho } from './coach';
+
+test('回应只去掉包在整段外面的引号', () => {
+  assert.equal(cleanEcho('“今天先如实记下这一次。”'), '今天先如实记下这一次。');
+  assert.equal(cleanEcho('“会上一直走神”和状态对得上。'), '“会上一直走神”和状态对得上。');
+  assert.equal(cleanEcho('第一句。\n\n第二句。'), '第一句。第二句。');
+});
