@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { CoachReview } from '@/components/CoachReview';
 import { addDays, shortLabel, todayStr } from '@/lib/dates';
 import { ENERGY_COLORS } from '@/lib/ring';
 import type { Entry } from '@/lib/types';
@@ -65,12 +66,7 @@ export default function WeeklyPage() {
         ))}
       </div>
 
-      <div className="note">
-        <p className="kicker">AI 教练复盘 · 下一版接入</p>
-        <p className="muted" style={{ fontSize: 14 }}>
-          每周日，教练会带你回看这些记录，用提问帮你区分事实和判断，最后整理出一张认知卡片和下周的系统调整。
-        </p>
-      </div>
+      <CoachReview week={week} today={today} />
     </div>
   );
 }

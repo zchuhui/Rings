@@ -31,12 +31,43 @@ export interface Entry {
   reason?: SkipReason;
   note: string;
   energy?: Energy;
+  /** 写入这条回顾之前的等级。修改当天回顾时，从这里重新计算，避免调整叠加 */
+  planLevel?: Level;
+}
+
+/** 认知卡片（PRD F7） */
+export interface Card {
+  id: string;
+  /** 一句认知，例如“我怕的不是说错，是怕冷场。” */
+  text: string;
+  /** 来源记录：用户自己写过的原话 */
+  source: string;
+  date: string;
+  pinned: boolean;
+  /** 产生这张卡片时的主题，用于归档 */
+  theme: string;
+}
+
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+/** 每周复盘（PRD F6） */
+export interface Review {
+  /** 开始复盘的日期，也是这次复盘的 id */
+  date: string;
+  messages: ChatMessage[];
+  /** 已经整理出卡片和调整，并由用户确认 */
+  done: boolean;
 }
 
 export interface AppState {
   version: 1;
   plan: Plan | null;
   entries: Entry[];
+  cards: Card[];
+  reviews: Review[];
 }
 
 export const STAGES: Record<Level, string> = {

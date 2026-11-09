@@ -3,6 +3,8 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { LogoMark } from '@/components/Logo';
+import { postJSON } from '@/lib/api';
+import { CRISIS_REPLY, type PlanDraft } from '@/lib/coach';
 import { todayStr } from '@/lib/dates';
 import { savePlan, seedDemo } from '@/lib/store';
 import type { Plan } from '@/lib/types';
@@ -34,6 +36,11 @@ export default function OnboardingPage() {
   const editing = !!state?.plan;
   const [step, setStep] = useState(0);
   const [d, setD] = useState<Draft>(EMPTY);
+  const [description, setDescription] = useState('');
+  const [aiOpen, setAiOpen] = useState(false);
+  const [busy, setBusy] = useState<'draft' | 'ladder' | null>(null);
+  const [aiMsg, setAiMsg] = useState('');
+  const [crisis, setCrisis] = useState(false);
 
   // 修改主题时带出现有内容
   useEffect(() => {
@@ -74,6 +81,55 @@ export default function OnboardingPage() {
     router.replace('/');
   };
 
+  // AI 把一段描述收敛成主题和执行系统（PRD F1、F2），结果只是草稿，用户可以逐项修改
+  const askDraft = async () => {
+    setBusy('draft');
+    setAiMsg('');
+    try {
+      const r = await postJSON<{ draft?: PlanDraft; crisis?: boolean }>('/api/plan-draft', { mode: 'full', description });
+      if (r.crisis) {
+        setCrisis(true);
+        return;
+      }
+      if (r.draft) {
+        setD(r.draft);
+        setAiMsg('已经帮你起了个草稿，每一项都可以改。');
+      }
+    } catch (e) {
+      setAiMsg((e as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const askLadder = async () => {
+    setBusy('ladder');
+    setAiMsg('');
+    try {
+      const r = await postJSON<{ ladder: Draft['ladder'] }>('/api/plan-draft', {
+        mode: 'ladder',
+        theme: d.theme,
+        trigger: d.trigger,
+        first: d.ladder[0],
+      });
+      setD((x) => ({ ...x, ladder: [x.ladder[0].trim() || r.ladder[0], ...r.ladder.slice(1)] as Draft['ladder'] }));
+    } catch (e) {
+      setAiMsg((e as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  if (crisis) {
+    return (
+      <div className="narrow">
+        <h1 className="serif" style={{ fontSize: 26, lineHeight: 1.4 }}>先照顾好自己。</h1>
+        <p style={{ whiteSpace: 'pre-line', lineHeight: 1.8 }}>{CRISIS_REPLY}</p>
+        <button type="button" className="btn ghost block" onClick={() => setCrisis(false)}>返回</button>
+      </div>
+    );
+  }
+
   const demo = () => {
     seedDemo();
     router.replace('/');
@@ -98,6 +154,29 @@ export default function OnboardingPage() {
             <p className="muted" style={{ fontSize: 14 }}>
               选一个看得见、做得到的行为。“提升沟通能力”太大，“在会议上说出自己的观点”刚好。
             </p>
+          </div>
+          <div className="note">
+            {aiOpen ? (
+              <>
+                <label htmlFor="desc" className="kicker">说说最近最想突破、或者最困扰你的事</label>
+                <textarea
+                  id="desc"
+                  className="textarea"
+                  rows={3}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="比如：开会时总是不敢说话，明明有想法，散会后又后悔"
+                />
+                <button type="button" className="btn block" style={{ minHeight: 46, marginTop: 6 }} disabled={busy !== null || description.trim().length < 4} onClick={askDraft}>
+                  {busy === 'draft' ? '正在收敛成一件事…' : 'AI 帮我收敛成一件事'}
+                </button>
+              </>
+            ) : (
+              <button type="button" className="linkbtn" onClick={() => setAiOpen(true)}>
+                不知道怎么写？说说你的困扰，让 AI 帮你起个草稿 →
+              </button>
+            )}
+            {aiMsg && step === 0 && <p className="muted" style={{ fontSize: 13 }}>{aiMsg}</p>}
           </div>
           <div className="field">
             <label htmlFor="theme">我想练的是</label>
@@ -153,6 +232,10 @@ export default function OnboardingPage() {
             <h1 className="serif" style={{ fontSize: 28, lineHeight: 1.35 }}>从种子到成林，<br />一共五级。</h1>
             <p className="muted" style={{ fontSize: 14 }}>你从 L1 开始。系统会根据每天的反馈自动升降，让挑战始终比你现在的能力难一点点。</p>
           </div>
+          <button type="button" className="btn ghost block" style={{ minHeight: 46 }} disabled={busy !== null || !d.theme.trim()} onClick={askLadder}>
+            {busy === 'ladder' ? '正在生成…' : d.ladder.slice(1).some((x) => x.trim()) ? '让 AI 重新生成 L2–L5' : '让 AI 帮我生成阶梯'}
+          </button>
+          {aiMsg && step === 2 && <p className="muted" style={{ fontSize: 13 }}>{aiMsg}</p>}
           {d.ladder.map((v, i) => (
             <div className="field" key={i}>
               <label htmlFor={`lv${i}`}>L{i + 1} · {LEVEL_HINTS[i]}</label>

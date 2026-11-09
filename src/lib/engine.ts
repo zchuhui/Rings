@@ -27,8 +27,8 @@ export interface Adjustment {
 
 const clampLevel = (n: number): Level => Math.max(1, Math.min(5, n)) as Level;
 
-const isHard = (e: Entry) =>
-  e.feel === 'hard' || (e.outcome === 'skipped' && (e.reason === 'hard' || e.reason === 'tired' || e.reason === 'other'));
+/** 只有“太难”算难度信号；没精力交给能量规则，其他原因不调难度 */
+const isHard = (e: Entry) => e.feel === 'hard' || (e.outcome === 'skipped' && e.reason === 'hard');
 
 const isEasy = (e: Entry) => e.outcome === 'done' && e.feel === 'easy';
 

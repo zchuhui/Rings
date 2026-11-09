@@ -112,3 +112,13 @@ test('道纹数：做了和一部分都算，没做不算', () => {
   ];
   assert.equal(countGrooves(entries), 2);
 });
+
+test('因为没精力没做不算太难，不降级', () => {
+  const entries = [
+    e('2026-10-20', 3, { outcome: 'skipped', feel: undefined, reason: 'tired' }),
+    e('2026-10-21', 3, { outcome: 'skipped', feel: undefined, reason: 'tired' }),
+  ];
+  const a = adjust(plan(3), entries);
+  assert.equal(a.kind, 'keep');
+  assert.equal(a.nextLevel, 3);
+});

@@ -75,10 +75,18 @@ export default function HomePage() {
 
         <Link href="/weekly" className="linkrow" style={{ marginTop: 6 }}>
           <span>
-            本周复盘 <span className="muted">· 回看这一周的记录</span>
+            本周复盘 <span className="muted">· 和 AI 教练聊聊这一周</span>
           </span>
           <span aria-hidden="true">→</span>
         </Link>
+        {state.cards.length > 0 && (
+          <Link href="/cards" className="linkrow" style={{ marginTop: -13, borderTop: 0 }}>
+            <span>
+              认知卡片 <span className="muted">· {state.cards.length} 张</span>
+            </span>
+            <span aria-hidden="true">→</span>
+          </Link>
+        )}
 
         <p className="serif" style={{ fontWeight: 500, fontSize: 17, marginTop: 6 }}>
           “{plan.identity.replace(/[。.]$/, '')}。”
